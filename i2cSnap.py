@@ -44,7 +44,12 @@ class I2C:
 		"""
 		self.fpga.write_int(self.controller_name, 0x10 , offset = commandReg,blindwrite=True)
 
-
+	def _strobeStopBit(self):
+		"""
+		Toggle stop bit to indicate end of transmission
+		"""
+		self.fpga.write_int(self.controller_name, 0x40 , offset = commandReg,blindwrite=True)
+		
 
 	def writeSlave(self,addr,data):
 		#write address + write bit to Transmit Register, shifting to create bottom bit
@@ -77,13 +82,12 @@ class I2C:
 
 
 		#set STO bit
-		self.fpga.write_int(self.controller_name, 0x40 , offset = commandReg,blindwrite=True)
-		
+		self._strobeStopBit()
 
 
 
 		#set WR bit
-		self.fpga.write_int(self.controller_name, 0x10 , offset = commandReg,blindwrite=True)
+		self._strobeWriteBit()
 		
 		
 		##WAIT FOR INTERRUPT OR TIP FLAG TO NEGATE, 0 when complete
@@ -102,10 +106,10 @@ class I2C:
 		self.fpga.write_int(self.controller_name, (slaveAddr<<1)|0x01 , offset = transmitReg,blindwrite=True)
 
 		#set STA bit
-		self.fpga.write_int(self.controller_name, 0x80 , offset = commandReg,blindwrite=True)
+		self._strobeStartBit()
 
 		#set WR bit
-		self.fpga.write_int(self.controller_name, 0x10 , offset = commandReg,blindwrite=True)
+		self._strobeWriteBit()
 
 		##WAIT FOR INTERRUPT OR TIP FLAG TO NEGATE, 0 when complete
 		while (self.getStatus()["TIP"]["val"])
@@ -137,10 +141,10 @@ class I2C:
 		self.fpga.write_int(self.controller_name, (slaveAddr<<1)|0x01 , offset = transmitReg,blindwrite=True)
 
 		#set STA bit
-		self.fpga.write_int(self.controller_name, 0x80 , offset = commandReg,blindwrite=True)
+		self._strobeStartBit()
 
 		# set WR bit
-		self.fpga.write_int(self.controller_name, 0x10 , offset = commandReg,blindwrite=True)
+		self._strobeWriteBit()
 
 		##WAIT FOR INTERRUPT OR TIP FLAG TO NEGATE, 0 when complete
 		while (self.getStatus()["TIP"]["val"])
@@ -154,7 +158,7 @@ class I2C:
 		self.fpga.write_int(self.controller_name, 0x04 , offset = commandReg,blindwrite=True)
 
 		#set STO bit
-		self.fpga.write_int(self.controller_name, 0x40 , offset = commandReg,blindwrite=True)
+		self._strobeStopBit()
 
 		#return read value
 		return self.fpga.read_int(self.controller_name, offset = receiveReg)

@@ -1,7 +1,5 @@
-import corr
 import time
 
-katcp_port = 7147
 PRERlo = 0
 PRERhi = 1
 controlReg = 2
@@ -30,8 +28,22 @@ class I2C:
 
 	def getStatus(self):
 		status = self.fpga.read_int('i2c_ant1', offset = statusReg)
-		statusDict = {'Acknowledge from Slave' : (status >> 7)&1 , 'Busy' : (status >> 6)&1 , 'Arbitration lost' : (status >> 5)&1, 'Transfer in Progress' : (status>>1)&1, 'Interrupt Pending' : status&1} 
+		statusDict = {"ACK":{"desc":'Acknowledge from Slave',"val" : (status >> 7) &1}, "BUSY" : {"val" : (status >> 6)&1 , "desc" : 'Busy i2c bus'}, 'ARB' : {"val": (status >> 5)&1, "desc":'Lost Arbitration'}, "TIP" : {"val":(status>>1)&1,"desc":'Transfer in Progress'}, "INT": {"desc" : 'Interrupt Pending', "val" : status&1}}
 		return statusDict
+	
+	def _strobeStartBit(self):
+		"""
+		Generate an i2c start signal for transmission/reception. This register automatically clears bits. 
+
+		"""
+		self.fpga.write_int(self.controller_name, 0x80 , offset = commandReg,blindwrite=True)
+		
+	def _strobeWriteBit(self):
+		"""
+		Toggle write bit to indicate that writing to slave is about to take place 
+		"""
+		self.fpga.write_int(self.controller_name, 0x10 , offset = commandReg,blindwrite=True)
+
 
 
 	def writeSlave(self,addr,data):
@@ -41,23 +53,21 @@ class I2C:
 		
 		
 		#set STA bit
-		self.fpga.write_int(self.controller_name, 0x80 , offset = commandReg,blindwrite=True)
-		
+		self._strobeStartBit()	
 		
 		
 		
 		#set WR bit
-		self.fpga.write_int(self.controller_name, 0x10 , offset = commandReg,blindwrite=True)
-
+		self._strobeWriteBit()
 		
 		##WAIT FOR INTERRUPT OR TIP FLAG TO NEGATE, 0 when complete
-		while (self.fpga.read_int(self.controller_name, offset = statusReg)&0x02):
+		while (self.getStatus()["TIP"]["val"])
 			time.sleep(.05)
 
 
 
 		#read RxACK bit from status register, should be 0
-		while (self.fpga.read_int(self.controller_name, offset = statusReg)&0x80):
+		while self.getStatus()["ACK"]["val"]:
 			time.sleep(.05)
 		
 		
@@ -76,16 +86,15 @@ class I2C:
 		self.fpga.write_int(self.controller_name, 0x10 , offset = commandReg,blindwrite=True)
 		
 		
-		##WAIT FOR INTERRUPT OR TIP FLAG TO NEGATE
-		while (self.fpga.read_int(self.controller_name, offset = statusReg)&0x02):
-			time.sleep(.05)
-		
-		
-		
-		#read RxACK bit from Status register: should be 0
-		while (self.fpga.read_int(self.controller_name, offset = statusReg)&0x80):
+		##WAIT FOR INTERRUPT OR TIP FLAG TO NEGATE, 0 when complete
+		while (self.getStatus()["TIP"]["val"])
 			time.sleep(.05)
 
+
+
+		#read RxACK bit from status register, should be 0
+		while self.getStatus()["ACK"]["val"]:
+			time.sleep(.05)
 
 
 	def readSlave(self,slaveAddr, memLoc=0):
@@ -98,13 +107,14 @@ class I2C:
 		#set WR bit
 		self.fpga.write_int(self.controller_name, 0x10 , offset = commandReg,blindwrite=True)
 
-		#wait for interrupt or TIP flag to negate
-		while (self.fpga.read_int(self.controller_name, offset = statusReg)&0x02):
+		##WAIT FOR INTERRUPT OR TIP FLAG TO NEGATE, 0 when complete
+		while (self.getStatus()["TIP"]["val"])
 			time.sleep(.05)
 
 
-		#read RxACK bit from status register
-		while (self.fpga.read_int(self.controller_name, offset = statusReg)&0x80):
+
+		#read RxACK bit from status register, should be 0
+		while self.getStatus()["ACK"]["val"]:
 			time.sleep(.05)
 
 
@@ -112,13 +122,14 @@ class I2C:
 		self.fpga.write_int(self.controller_name, memLoc , offset = transmitReg,blindwrite=True)
 
 		
-		#wait for interrupt or TIP flag to negate
-		while (self.fpga.read_int(self.controller_name, offset = statusReg)&0x02):
+		##WAIT FOR INTERRUPT OR TIP FLAG TO NEGATE, 0 when complete
+		while (self.getStatus()["TIP"]["val"])
 			time.sleep(.05)
 
 
-		#read RxACK bit from status register
-		while (self.fpga.read_int(self.controller_name, offset = statusReg)&0x80):
+
+		#read RxACK bit from status register, should be 0
+		while self.getStatus()["ACK"]["val"]:
 			time.sleep(.05)
 
 
@@ -131,8 +142,8 @@ class I2C:
 		# set WR bit
 		self.fpga.write_int(self.controller_name, 0x10 , offset = commandReg,blindwrite=True)
 
-		#wait for interrupt or TIP flag to negate
-		while (self.fpga.read_int(self.controller_name, offset = statusReg)&0x02):
+		##WAIT FOR INTERRUPT OR TIP FLAG TO NEGATE, 0 when complete
+		while (self.getStatus()["TIP"]["val"])
 			time.sleep(.05)
 
 		#set RD bit

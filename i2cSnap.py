@@ -17,6 +17,7 @@ class I2C:
 	def __init__(self,fpga,controller_name):
 		self.fpga = fpga
 		self.controller_name = controller_name
+                self.enable_core()
 
 
 
@@ -147,4 +148,19 @@ class I2C:
 		#return read value
 		return self.fpga.read_int(self.controller_name, offset = receiveReg)
 
+	def enable_core(self):
+		"""
+		Enable the wb-i2c core. Set the I2C enable bit to 1,
+		Set the interrupt bit to 0 (disabled).
+		"""
+		I2C_ENABLE_OFFSET = 7
+		self.fpga.write_int(self.controller_name, 1<<I2C_ENABLE_OFFSET, offset=controlReg)
+
+	def disable_core(self):
+		"""
+		Disable the wb-i2c core. Set the I2C enable bit to 0,
+		Set the interrupt bit to 0 (disabled).
+		"""
+		I2C_ENABLE_OFFSET = 7
+		self.fpga.write_int(self.controller_name, 0<<I2C_ENABLE_OFFSET, offset=controlReg)
 	

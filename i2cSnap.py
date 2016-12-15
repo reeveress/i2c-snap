@@ -27,6 +27,10 @@ class I2C:
 		#Write the preScale factor to the Prescale Register's low bit 
 		self.fpga.write_int(self.controller_name, preScale, offset = PRERlo,blindwrite=True)
 
+	def getStatus(self):
+		status = self.fpga.read_int('i2c_ant1', offset = statusReg)
+		statusDict = {'Acknowledge from Slave' : (status >> 7)&1 , 'Busy' : (status >> 6)&1 , 'Arbitration lost' : (status >> 5)&1, 'Transfer in Progress' : (status>>1)&1, 'Interrupt Pending' : status&1} 
+		return statusDict
 
 
 	def writeSlave(self,addr,data):

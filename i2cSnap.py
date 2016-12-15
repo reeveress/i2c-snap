@@ -20,7 +20,7 @@ class I2C:
 
 
 
-	def clockSpeed(self, inputSpeed, desiredSpeed):
+	def clockSpeed(self, desiredSpeed, inputSpeed = 100):
 		preScale = (inputSpeed/(5*desiredSpeed))-1
 		#Clear EN bit in the control register before writing to prescale register
 		self.fpga.write_int(self.controller_name, 0x00, offset = controlReg)
@@ -46,13 +46,13 @@ class I2C:
 
 		
 		##WAIT FOR INTERRUPT OR TIP FLAG TO NEGATE, 0 when complete
-		while not(self.fpga.read_int(self.controller_name, offset = statusReg)&0x02):
+		while (self.fpga.read_int(self.controller_name, offset = statusReg)&0x02):
 			time.sleep(.05)
 
 
 
 		#read RxACK bit from status register, should be 0
-		while not(self.fpga.read_int(self.controller_name, offset = statusReg)&0x80):
+		while (self.fpga.read_int(self.controller_name, offset = statusReg)&0x80):
 			time.sleep(.05)
 		
 		
@@ -72,20 +72,20 @@ class I2C:
 		
 		
 		##WAIT FOR INTERRUPT OR TIP FLAG TO NEGATE
-		while not(self.fpga.read_int(self.controller_name, offset = statusReg)&0x02):
+		while (self.fpga.read_int(self.controller_name, offset = statusReg)&0x02):
 			time.sleep(.05)
 		
 		
 		
 		#read RxACK bit from Status register: should be 0
-		while not(self.fpga.read_int(self.controller_name, offset = statusReg)&0x80):
+		while (self.fpga.read_int(self.controller_name, offset = statusReg)&0x80):
 			time.sleep(.05)
 
 
 
 	def readSlave(self,slaveAddr, memLoc=0):
 		#write address+write bit to transmit register
-		self.fpga.write_int(self.controller_name, slaveAddr<<1 , offset = transmitReg,blindwrite=True)
+		self.fpga.write_int(self.controller_name, (slaveAddr<<1)|0x01 , offset = transmitReg,blindwrite=True)
 
 		#set STA bit
 		self.fpga.write_int(self.controller_name, 0x80 , offset = commandReg,blindwrite=True)
@@ -94,12 +94,12 @@ class I2C:
 		self.fpga.write_int(self.controller_name, 0x10 , offset = commandReg,blindwrite=True)
 
 		#wait for interrupt or TIP flag to negate
-		while not(self.fpga.read_int(self.controller_name, offset = statusReg)&0x02):
+		while (self.fpga.read_int(self.controller_name, offset = statusReg)&0x02):
 			time.sleep(.05)
 
 
 		#read RxACK bit from status register
-		while not(self.fpga.read_int(self.controller_name, offset = statusReg)&0x80):
+		while (self.fpga.read_int(self.controller_name, offset = statusReg)&0x80):
 			time.sleep(.05)
 
 
@@ -108,12 +108,12 @@ class I2C:
 
 		
 		#wait for interrupt or TIP flag to negate
-		while not(self.fpga.read_int(self.controller_name, offset = statusReg)&0x02):
+		while (self.fpga.read_int(self.controller_name, offset = statusReg)&0x02):
 			time.sleep(.05)
 
 
 		#read RxACK bit from status register
-		while not(self.fpga.read_int(self.controller_name, offset = statusReg)&0x80):
+		while (self.fpga.read_int(self.controller_name, offset = statusReg)&0x80):
 			time.sleep(.05)
 
 
@@ -127,7 +127,7 @@ class I2C:
 		self.fpga.write_int(self.controller_name, 0x10 , offset = commandReg,blindwrite=True)
 
 		#wait for interrupt or TIP flag to negate
-		while not(self.fpga.read_int(self.controller_name, offset = statusReg)&0x02):
+		while (self.fpga.read_int(self.controller_name, offset = statusReg)&0x02):
 			time.sleep(.05)
 
 		#set RD bit

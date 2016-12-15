@@ -43,6 +43,13 @@ class I2C:
 		Toggle write bit to indicate that writing to slave is about to take place 
 		"""
 		self.fpga.write_int(self.controller_name, 0x10 , offset = commandReg,blindwrite=True)
+	def _strobeReadBit(self):
+		"""
+		Toggle read bit to prepare slave for reading
+		"""
+		self.fpga.write_int(self.controller_name, 0x20 , offset = commandReg,blindwrite=True)
+		
+		
 
 	def _strobeStopBit(self):
 		"""
@@ -151,8 +158,7 @@ class I2C:
 			time.sleep(.05)
 
 		#set RD bit
-		self.fpga.write_int(self.controller_name, 0x20 , offset = commandReg,blindwrite=True)
-
+		self._strobeReadBit()
 
 		#set ACK to 1(NACK)
 		self.fpga.write_int(self.controller_name, 0x04 , offset = commandReg,blindwrite=True)

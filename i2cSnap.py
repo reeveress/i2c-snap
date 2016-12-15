@@ -66,7 +66,7 @@ class I2C:
 		self._strobeWriteBit()
 		
 		##WAIT FOR INTERRUPT OR TIP FLAG TO NEGATE, 0 when complete
-		while (self.getStatus()["TIP"]["val"])
+		while (self.getStatus()["TIP"]["val"]):
 			time.sleep(.05)
 
 
@@ -91,7 +91,7 @@ class I2C:
 		
 		
 		##WAIT FOR INTERRUPT OR TIP FLAG TO NEGATE, 0 when complete
-		while (self.getStatus()["TIP"]["val"])
+		while (self.getStatus()["TIP"]["val"]):
 			time.sleep(.05)
 
 
@@ -112,7 +112,7 @@ class I2C:
 		self._strobeWriteBit()
 
 		##WAIT FOR INTERRUPT OR TIP FLAG TO NEGATE, 0 when complete
-		while (self.getStatus()["TIP"]["val"])
+		while (self.getStatus()["TIP"]["val"]):
 			time.sleep(.05)
 
 
@@ -127,7 +127,7 @@ class I2C:
 
 		
 		##WAIT FOR INTERRUPT OR TIP FLAG TO NEGATE, 0 when complete
-		while (self.getStatus()["TIP"]["val"])
+		while (self.getStatus()["TIP"]["val"]):
 			time.sleep(.05)
 
 
@@ -147,7 +147,7 @@ class I2C:
 		self._strobeWriteBit()
 
 		##WAIT FOR INTERRUPT OR TIP FLAG TO NEGATE, 0 when complete
-		while (self.getStatus()["TIP"]["val"])
+		while (self.getStatus()["TIP"]["val"]):
 			time.sleep(.05)
 
 		#set RD bit

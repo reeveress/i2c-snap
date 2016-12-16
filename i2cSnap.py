@@ -27,7 +27,10 @@ class I2C:
 		self.fpga.write_int(self.controller_name, (preScale >> 8) & 0xff, offset = PRERhi, blindwrite=True)
 		#Re-enable core
 		self.enable_core()
-
+	def readClockSpeed(self):
+		lowBit = self.fpga.read_int(self.controller_name, offset = PRERlo)
+		highBit = self.fpga.read_int(self.controller_name, offset = PRERhi)
+		return (highBit << 8) + lowBit
 	def getStatus(self):
 		status = self.fpga.read_int('i2c_ant1', offset = statusReg)
 		statusDict = {

@@ -18,7 +18,10 @@ class I2C:
                 self.enable_core()
 
 	def clockSpeed(self, desiredSpeed, inputSpeed = 100):
-		preScale = (inputSpeed/(5*desiredSpeed))-1
+		"""
+		Input speed in MHz and desired speed in kHz
+		"""
+		preScale = int((inputSpeed*1e3/(5*desiredSpeed))-1)
 		#Clear EN bit in the control register before writing to prescale register
 		self.disable_core()
 		#Write the preScale factor to the Prescale Register's low bit 
@@ -47,7 +50,6 @@ class I2C:
 		Generate an i2c start signal for transmission/reception. This register automatically clears bits. 
 
 		"""
-		self.fpga.write_int(self.controller_name, 0x00 , offset = commandReg,blindwrite=True)
 		self.fpga.write_int(self.controller_name, 0x80 , offset = commandReg,blindwrite=True)
 		
 	def _strobeWriteBit(self):
@@ -68,6 +70,8 @@ class I2C:
 		"""
 		self.fpga.write_int(self.controller_name, 0x40 , offset = commandReg,blindwrite=True)
 
+	def _strobeIACK(self):
+		self.fpga.write_int(self.controller_name, 0x01, offset = commandReg, blindwrite=True)
 	def writeSlave(self,addr,data):
 		#write address + write bit to Transmit Register, shifting to create bottom bit
 		#to specify read/write operation
@@ -84,14 +88,12 @@ class I2C:
 			time.sleep(.05)
 
 		#read RxACK bit from status register, should be 0
-		while self.getStatus()["ACK"]["val"]:
-			time.sleep(.05)
+		#while self.getStatus()["ACK"]["val"]:
+		#	time.sleep(.05)
 		
 		#write data to Transmit registrer
 		self.fpga.write_int(self.controller_name, data, offset = transmitReg,blindwrite=True)
 
-		#set STO bit
-		self._strobeStopBit()
 
 		#set WR bit
 		self._strobeWriteBit()
@@ -99,10 +101,12 @@ class I2C:
 		##WAIT FOR INTERRUPT OR TIP FLAG TO NEGATE, 0 when complete
 		while (self.getStatus()["TIP"]["val"]):
 			time.sleep(.05)
+		#set STO bit
+		self._strobeStopBit()
 
 		#read RxACK bit from status register, should be 0
-		while self.getStatus()["ACK"]["val"]:
-			time.sleep(.05)
+		#while self.getStatus()["ACK"]["val"]:
+		#	time.sleep(.05)
 
 	def readSlave(self,slaveAddr, memLoc=0):
 		#write address+write bit to transmit register

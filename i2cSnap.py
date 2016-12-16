@@ -36,6 +36,7 @@ class I2C:
 		Generate an i2c start signal for transmission/reception. This register automatically clears bits. 
 
 		"""
+		self.fpga.write_int(self.controller_name, 0x00 , offset = commandReg,blindwrite=True)
 		self.fpga.write_int(self.controller_name, 0x80 , offset = commandReg,blindwrite=True)
 		
 	def _strobeWriteBit(self):

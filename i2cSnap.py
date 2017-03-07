@@ -35,7 +35,7 @@ class I2C:
 		highBit = self.fpga.read_int(self.controller_name, offset = PRERhi)
 		return (highBit << 8) + lowBit
 	def getStatus(self):
-		status = self.fpga.read_int('i2c_ant1', offset = statusReg)
+		status = self.fpga.read_int(self.controller_name, offset = statusReg)
 		statusDict = {
 			"ACK"  : {"val" : (status >> 7) & 1, "desc" :'Acknowledge from Slave',},
 			"BUSY" : {"val" : (status >> 6) & 1, "desc" : 'Busy i2c bus'},

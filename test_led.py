@@ -14,8 +14,8 @@ i2c.clockSpeed(200)
 
 i=0
 while(True):
-    i2c.writeSlave(LED0_ADDR, i%256)
-    i2c.writeSlave(LED1_ADDR, i%256)
+    i2c.write_byte(LED0_ADDR, i%256)
+    i2c.write_byte(LED1_ADDR, i%256)
     i += 1
     time.sleep(0.05)
 

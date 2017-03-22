@@ -13,7 +13,7 @@ CMD_START = 1 << 7
 CMD_STOP = 1 << 6
 CMD_READ = 1 << 5
 CMD_WRITE = 1 << 4
-CMD_ACK = 1 << 3
+CMD_NACK = 1 << 3
 CMD_IACK = 1 << 0
 
 CORE_EN = 1 << 7 # i2c core enable
@@ -190,36 +190,51 @@ class I2C:
 		I2C_ENABLE_OFFSET = 7
 		self.fpga.write_int(self.controller_name, 0<<I2C_ENABLE_OFFSET, offset=controlReg)
 
+	def _write(self,addr,data):
+		self.fpga.write_int(self.controller_name, data,	offset = addr, blindwrite=True)
+
+	def _read(self,addr):
+		return self.fpga.read_int(self.controller_name,	offset = addr)
+
 	def write_byte(self,addr,data):
-		self.fpga.write_int(self.controller_name, (addr<<1)|WRITE_BIT,	offset = transmitReg,blindwrite=True)
-		self.fpga.write_int(self.controller_name, CMD_START|CMD_WRITE,	offset = commandReg,blindwrite=True)
-		self.fpga.write_int(self.controller_name, data,			offset = transmitReg,blindwrite=True)
-		self.fpga.write_int(self.controller_name, CMD_WRITE,		offset = commandReg,blindwrite=True)
-		self.fpga.write_int(self.controller_name, CMD_STOP,		offset = commandReg,blindwrite=True)
+		self._write(transmitReg,	(addr<<1)|WRITE_BIT)
+		self._write(commandReg,		CMD_START|CMD_WRITE)
+		self._write(transmitReg,	data)
+		self._write(commandReg,		CMD_WRITE|CMD_STOP)
 		
-	def write_bytes(self,addr,data):
-		self.fpga.write_int(self.controller_name, (addr<<1)|WRITE_BIT,	offset = transmitReg,blindwrite=True)
-		self.fpga.write_int(self.controller_name, CMD_START|CMD_WRITE,	offset = commandReg,blindwrite=True)
-		for i in range(len(data)):
-			self.fpga.write_int(self.controller_name, data[i],	offset = transmitReg,blindwrite=True)
-			self.fpga.write_int(self.controller_name, CMD_WRITE,	offset = commandReg,blindwrite=True)
-		self.fpga.write_int(self.controller_name, CMD_STOP,		offset = commandReg,blindwrite=True)
+	def write_bytes(self,addr,data,hold=True):
+		if hold:
+			self._write(transmitReg,	(addr<<1)|WRITE_BIT)
+			self._write(commandReg,		CMD_START|CMD_WRITE)
+			for i in range(len(data)):
+				self._write(transmitReg,	data[i])
+				self._write(commandReg,		CMD_WRITE)
+			self._write(commandReg,		CMD_STOP)
+		else:
+			for i in range(len(data)):
+				self.write_byte(addr,data[i])
 
 	def read_byte(self,addr):
-		self.fpga.write_int(self.controller_name, (addr<<1)|READ_BIT,	offset = transmitReg,blindwrite=True)
-		self.fpga.write_int(self.controller_name, CMD_START|CMD_WRITE,	offset = commandReg,blindwrite=True)
-		self.fpga.write_int(self.controller_name, CMD_READ,		offset = commandReg,blindwrite=True)
-		data = self.fpga.read_int(self.controller_name,			offset = receiveReg)
-		self.fpga.write_int(self.controller_name, CMD_STOP,		offset = commandReg,blindwrite=True)
+		self._write(transmitReg,	(addr<<1)|READ_BIT)
+		self._write(commandReg,		CMD_START|CMD_WRITE)
+		self._write(commandReg,		CMD_READ|CMD_NACK|CMD_STOP)
+		return self._read(receiveReg)
+
+	def read_bytes(self,addr,length,hold=True):
+		data = []
+		if hold:
+			self._write(transmitReg,	(addr<<1)|READ_BIT)
+			self._write(commandReg,		CMD_START|CMD_WRITE)
+			for i in range(length-1):
+				self._write(commandReg,		CMD_READ)
+				ret = self._read(receiveReg)
+				data.append(ret)
+			self._write(commandReg,		CMD_READ|CMD_NACK|CMD_STOP)
+			ret = self._read(receiveReg)
+			data.append(ret)
+		else:
+			for i in range(length):
+				ret = self.read_byte(addr)
+				data.append(ret)
 		return data
 
-	def read_bytes(self,addr, length):
-		data = []
-		self.fpga.write_int(self.controller_name, (addr<<1)|READ_BIT,	offset = transmitReg,blindwrite=True)
-		self.fpga.write_int(self.controller_name, CMD_START|CMD_WRITE,	offset = commandReg,blindwrite=True)
-		for i in range(length):
-			self.fpga.write_int(self.controller_name, CMD_READ,	offset = commandReg,blindwrite=True)
-			ret = self.fpga.read_int(self.controller_name,		offset = receiveReg)
-			data.append(ret)
-		self.fpga.write_int(self.controller_name, CMD_STOP,		offset = commandReg,blindwrite=True)
-		return data

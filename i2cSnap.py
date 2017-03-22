@@ -199,16 +199,24 @@ class I2C:
 	def write_byte(self,addr,data):
 		self._write(transmitReg,	(addr<<1)|WRITE_BIT)
 		self._write(commandReg,		CMD_START|CMD_WRITE)
+		while (self.getStatus()["TIP"]["val"]):
+			time.sleep(.01)
 		self._write(transmitReg,	data)
 		self._write(commandReg,		CMD_WRITE|CMD_STOP)
+		while (self.getStatus()["TIP"]["val"]):
+			time.sleep(.01)
 		
 	def write_bytes(self,addr,data,hold=True):
 		if hold:
 			self._write(transmitReg,	(addr<<1)|WRITE_BIT)
 			self._write(commandReg,		CMD_START|CMD_WRITE)
+			while (self.getStatus()["TIP"]["val"]):
+				time.sleep(.01)
 			for i in range(len(data)):
 				self._write(transmitReg,	data[i])
 				self._write(commandReg,		CMD_WRITE)
+				while (self.getStatus()["TIP"]["val"]):
+					time.sleep(.01)
 			self._write(commandReg,		CMD_STOP)
 		else:
 			for i in range(len(data)):
@@ -217,7 +225,11 @@ class I2C:
 	def read_byte(self,addr):
 		self._write(transmitReg,	(addr<<1)|READ_BIT)
 		self._write(commandReg,		CMD_START|CMD_WRITE)
+		while (self.getStatus()["TIP"]["val"]):
+			time.sleep(.01)
 		self._write(commandReg,		CMD_READ|CMD_NACK|CMD_STOP)
+		while (self.getStatus()["TIP"]["val"]):
+			time.sleep(.01)
 		return self._read(receiveReg)
 
 	def read_bytes(self,addr,length,hold=True):
@@ -225,13 +237,19 @@ class I2C:
 		if hold:
 			self._write(transmitReg,	(addr<<1)|READ_BIT)
 			self._write(commandReg,		CMD_START|CMD_WRITE)
+			while (self.getStatus()["TIP"]["val"]):
+				time.sleep(.01)
 			for i in range(length-1):
 				self._write(commandReg,		CMD_READ)
 				ret = self._read(receiveReg)
 				data.append(ret)
+				while (self.getStatus()["TIP"]["val"]):
+					time.sleep(.01)
 			self._write(commandReg,		CMD_READ|CMD_NACK|CMD_STOP)
 			ret = self._read(receiveReg)
 			data.append(ret)
+			while (self.getStatus()["TIP"]["val"]):
+				time.sleep(.01)
 		else:
 			for i in range(length):
 				ret = self.read_byte(addr)

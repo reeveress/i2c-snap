@@ -13,11 +13,11 @@ CMD_START = 1 << 7
 CMD_STOP = 1 << 6
 CMD_READ = 1 << 5
 CMD_WRITE = 1 << 4
-CMD_NACK = 1 << 3
-CMD_IACK = 1 << 0
+CMD_NACK = 1 << 3 # Not ACKnowledge, output 1 on SDA means release SDA and let VDD drives SDA high
+CMD_IACK = 1 << 0 # interrupt ack, not supported
 
 CORE_EN = 1 << 7 # i2c core enable
-INT_EN = 1 << 6 # interrupt enable
+INT_EN = 1 << 6 # interrupt enable, not supported
 
 WRITE_BIT = 0
 READ_BIT = 1
@@ -197,6 +197,10 @@ class I2C:
 		return self.fpga.read_int(self.controller_name,	offset = addr)
 
 	def write_byte(self,addr,data):
+		"""
+		addr: 8-bit integer
+		data: 8-bit integer
+		"""
 		self._write(transmitReg,	(addr<<1)|WRITE_BIT)
 		self._write(commandReg,		CMD_START|CMD_WRITE)
 		while (self.getStatus()["TIP"]["val"]):
@@ -207,6 +211,11 @@ class I2C:
 			time.sleep(.01)
 		
 	def write_bytes(self,addr,data,hold=True):
+		"""
+		addr: 8-bit integer
+		data: a list of 8-bit integers
+                """
+		# hold=True: write multiple bytes in one pair of I2C start and stop signals
 		if hold:
 			self._write(transmitReg,	(addr<<1)|WRITE_BIT)
 			self._write(commandReg,		CMD_START|CMD_WRITE)
@@ -218,11 +227,15 @@ class I2C:
 				while (self.getStatus()["TIP"]["val"]):
 					time.sleep(.01)
 			self._write(commandReg,		CMD_STOP)
+		# hold=False: issue multiple pairs of start and stop. Write one byte during each pair
 		else:
 			for i in range(len(data)):
 				self.write_byte(addr,data[i])
 
 	def read_byte(self,addr):
+		"""
+		addr: 8-bit integer
+		"""
 		self._write(transmitReg,	(addr<<1)|READ_BIT)
 		self._write(commandReg,		CMD_START|CMD_WRITE)
 		while (self.getStatus()["TIP"]["val"]):
@@ -233,23 +246,33 @@ class I2C:
 		return self._read(receiveReg)
 
 	def read_bytes(self,addr,length,hold=True):
+		"""
+		addr: 8-bit integer
+		length: the number of bytes needs to be read
+                """
 		data = []
+		# hold=True: read multiple bytes in one pair of I2C start and stop signals
 		if hold:
 			self._write(transmitReg,	(addr<<1)|READ_BIT)
 			self._write(commandReg,		CMD_START|CMD_WRITE)
 			while (self.getStatus()["TIP"]["val"]):
 				time.sleep(.01)
 			for i in range(length-1):
+				# The command below also gives an ACK signal from master to slave
+				# because CMD_ACK is actually 0
 				self._write(commandReg,		CMD_READ)
 				ret = self._read(receiveReg)
 				data.append(ret)
 				while (self.getStatus()["TIP"]["val"]):
 					time.sleep(.01)
+			# The last read ends with a NACK (not acknowledge) signal and a STOP
+			# from master to slave
 			self._write(commandReg,		CMD_READ|CMD_NACK|CMD_STOP)
 			ret = self._read(receiveReg)
 			data.append(ret)
 			while (self.getStatus()["TIP"]["val"]):
 				time.sleep(.01)
+		# hold=False: issue multiple pairs of start and stop. Read one byte during each pair
 		else:
 			for i in range(length):
 				ret = self.read_byte(addr)
